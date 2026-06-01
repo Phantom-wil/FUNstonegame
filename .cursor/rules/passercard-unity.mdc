@@ -1,0 +1,53 @@
+---
+description: PasserCard Unity card game conventions
+globs: Assets/**/*.cs
+alwaysApply: false
+---
+
+# PasserCard — Unity 卡牌游戏
+
+## 项目信息
+
+- **名称**: PasserCard
+- **引擎**: Unity 2021.2.17f1
+- **语言**: C#
+- **命名空间根**: `PasserCard`
+
+## 目录约定
+
+- `Assets/_Project/Scripts/Cards/` — 卡牌数据与实例
+- `Assets/_Project/Scripts/Gameplay/` — 纯 C# 玩法逻辑（尽量不依赖 MonoBehaviour）
+- `Assets/_Project/Scripts/Core/` — 场景入口、服务、MonoBehaviour 桥接
+- `Assets/_Project/Data/` — ScriptableObject 资产
+- `Assets/_Project/Prefabs/` — 预制体
+- `Assets/_Project/Scenes/` — 场景
+
+## C# 规范
+
+- 使用 `PasserCard.*` 命名空间，按文件夹划分子命名空间
+- 扑克牌用 `PlayingCardInstance`（双角、Pass 面、附魔/瘟疫 flags）
+- 玩法逻辑（`Deck`、`Hand`、`EncounterSession`）优先写成可单元测试的纯类
+- 新 MonoBehaviour 放在 `Core/` 或明确的 UI 子目录
+- 遵循现有 ECC C# 规则（`csharp-*`）中的命名与可读性约定
+
+## ECC 工作流（固定）
+
+改代码前先匹配 ECC skill，完成后做最小验证：
+
+| 任务类型 | Skill |
+|---------|--------|
+| C# 逻辑 / 命名 | `coding-standards`, `csharp-coding-style` |
+| UI 布局 / 交互态 | `make-interfaces-feel-better`, `frontend-patterns` |
+| 新功能 / 修 bug | `tdd-workflow`（有测试则跑 EditMode） |
+| 提交前 | `verification-loop` |
+
+## 卡牌 UI
+
+- 牌面分层：`CardFace` 底图 + `8BitDeck` 抠图叠层（`CardVisualHelper`）
+- 选中态：**外边框**（`SelectBorder`），不用整卡 tint
+- 切图偏移：`BalatroSpriteLibrary` 半格列偏移 + 内容裁边
+
+
+- 不要在 `Assets/` 外放游戏脚本
+- 不要提交 `Library/`、`Temp/`、`UserSettings/`
+- 避免在 `CardDefinition` 中存放运行时可变状态
