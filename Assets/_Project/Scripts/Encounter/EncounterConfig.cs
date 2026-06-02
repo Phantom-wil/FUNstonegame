@@ -1,3 +1,6 @@
+using PasserCard.Boss;
+using PasserCard.Table;
+
 namespace PasserCard.Encounter
 {
     public enum EncounterPhase
@@ -22,5 +25,12 @@ namespace PasserCard.Encounter
         public int RetaliationCoinLoss { get; set; } = 2;
         public int VictoryCoinReward { get; set; } = 8;
         public int DefeatCoinLoss { get; set; } = 5;
+        public TableEnvironmentId TableEnvironment { get; set; } = TableEnvironmentId.FogMist;
+        public BossId BossId { get; set; } = BossId.None;
+        public bool IsElite { get; set; }
+        public bool HideFogCorners { get; set; }
+        public float IdentityScoreMultiplier { get; set; } = 1f;
+        public int IdentityExtraPasses { get; set; }
+        public float IdentityCoinGainMultiplier { get; set; } = 1f;
     }
 }

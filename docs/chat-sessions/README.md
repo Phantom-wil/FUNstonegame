@@ -4,7 +4,7 @@ Cursor agent conversation exports for project continuity.
 
 | Date | Session ID | File | Notes |
 |------|------------|------|-------|
-| 2026-06-02 | `fd14f60e-fefd-4cee-8e96-92d8336f5251` | [2026-06-02-passercard-session.jsonl](./2026-06-02-passercard-session.jsonl) | **Latest** — includes UI/art work + git push + sync guide |
+| 2026-06-02 | `fd14f60e-fefd-4cee-8e96-92d8336f5251` | [2026-06-02-passercard-session.jsonl](./2026-06-02-passercard-session.jsonl) | **Latest** — table shaders, Run/map/Boss, enchantments, compile fixes |
 | 2026-06-01 | `fd14f60e-fefd-4cee-8e96-92d8336f5251` | [2026-06-01-passercard-session.jsonl](./2026-06-01-passercard-session.jsonl) | Earlier snapshot (same thread) |
 
 ## Format

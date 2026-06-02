@@ -7,28 +7,28 @@ todos:
     status: completed
   - id: rewrite-card-model
     content: 将 CardDefinition/CardInstance 重写为双面扑克模型 + Pass 状态
-    status: pending
+    status: completed
   - id: poker-evaluator
     content: 实现德扑牌型判定与计分模块（含单元测试）
-    status: pending
+    status: completed
   - id: pass-prototype
     content: 单场景 Pass 原型：选牌、翻转、出牌、显示牌型分数
-    status: pending
+    status: completed
   - id: encounter-soulcoin
     content: 守路人 encounter + 魂币胜负结算（无 HP）
-    status: pending
+    status: completed
   - id: act-map
     content: STS 式 Act 地图：分支节点、商店/星球/卡戎/Boss
-    status: pending
+    status: completed
   - id: boss-content
     content: 四大 Boss（尼克斯、许德拉、刻耳柏洛斯、斯提克斯）机制与内容填充
-    status: pending
+    status: completed
   - id: table-enchant-design
     content: 锁定牌桌环境（按 Act）与天启四骑士附魔规则及交互优先级
     status: completed
   - id: run-identity-design
     content: 设计开局套牌差异与 Passer 职业身份（若采用）及其起始加成
-    status: pending
+    status: completed
 isProject: false
 ---
 

@@ -1,5 +1,6 @@
 using System;
 using PasserCard.Cards;
+using PasserCard.Table;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,6 +10,7 @@ namespace PasserCard.UI
     {
         public sealed class BuiltUI
         {
+            public TableBackdropController TableBackdrop = null!;
             public Text StatusText = null!;
             public Text MessageText = null!;
             public Transform HandContainer = null!;
@@ -23,7 +25,6 @@ namespace PasserCard.UI
             public Button NextQuotaButton = null!;
         }
 
-        private static readonly Color TableColor = new(0.07f, 0.11f, 0.09f, 0.98f);
         private static readonly Color PrimaryButtonColor = new(0.18f, 0.2f, 0.22f, 0.92f);
         private static readonly Color PhaseButtonColor = new(0.14f, 0.16f, 0.18f, 0.88f);
 
@@ -46,7 +47,8 @@ namespace PasserCard.UI
                     typeof(UnityEngine.EventSystems.StandaloneInputModule));
             }
 
-            var root = CreatePanel(canvasGo.transform, "Root", TableColor, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            var root = CreatePanel(canvasGo.transform, "Root", new Color(0f, 0f, 0f, 0f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            var tableBackdrop = TableBackdropController.Create(root.transform);
 
             var status = CreateText(root.transform, "StatusText", 20, TextAnchor.UpperLeft,
                 new Vector2(0, 1), new Vector2(0.55f, 1), new Vector2(28, -28), new Vector2(-12, -118));
@@ -80,6 +82,7 @@ namespace PasserCard.UI
 
             return new BuiltUI
             {
+                TableBackdrop = tableBackdrop,
                 StatusText = status,
                 MessageText = message,
                 HandContainer = handRow.transform,

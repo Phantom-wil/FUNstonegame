@@ -1,6 +1,8 @@
 using PasserCard.Cards;
+using PasserCard.Enchantments;
 using PasserCard.Poker;
 using PasserCard.Run;
+using PasserCard.Table;
 
 namespace PasserCard.Pass
 {
@@ -27,11 +29,27 @@ namespace PasserCard.Pass
 
     public static class SuitPassRules
     {
-        public static PassResult TryPass(PlayingCardInstance card, PassState state, SoulCoinWallet wallet, int passLimit)
+        public static PassResult TryPass(
+            PlayingCardInstance card,
+            PassState state,
+            SoulCoinWallet wallet,
+            int passLimit,
+            Encounter.EncounterConfig? config = null,
+            System.Random? random = null)
         {
             if (card.IsPinnedToFogSlot)
             {
                 return new PassResult(false, "Pinned fog cards cannot pass.", false);
+            }
+
+            if (!EnchantmentRules.CanPass(card))
+            {
+                return new PassResult(false, "Fold-locked card cannot pass.", false);
+            }
+
+            if (config != null && !TableEnvironmentRules.TryPassThornTable(card, config, wallet))
+            {
+                return new PassResult(false, "Not enough soul coins for thorn table pass.", false);
             }
 
             if (MustDoublePass(card, state))
@@ -63,10 +81,17 @@ namespace PasserCard.Pass
             }
 
             ApplyPostPassEffects(card, state, wallet);
-            return new PassResult(true, "Passed.", consumesToken);
+
+            var result = new PassResult(true, "Passed.", consumesToken);
+            if (config != null && random != null)
+            {
+                result = TableEnvironmentRules.ApplyPostPassTableEffect(card, result, config, state, random);
+            }
+
+            return result;
         }
 
-        public static ScoringCard ToScoringCard(PlayingCardInstance card, bool inFogSlot)
+        public static ScoringCard ToScoringCard(PlayingCardInstance card, bool inFogSlot, float riftMult = 1f)
         {
             var rank = card.EffectiveRank;
             var countsForStraight = true;
@@ -76,6 +101,11 @@ namespace PasserCard.Pass
             if (!inFogSlot && !card.PassEffectsSuppressed)
             {
                 ApplyScoringModifiers(card, ref rank, ref countsForStraight, ref countsForFlush, ref bonusChips);
+            }
+
+            if (riftMult > 1f)
+            {
+                bonusChips += (int)System.Math.Round(10f * (riftMult - 1f));
             }
 
             return new ScoringCard(rank, card.Suit, countsForStraight, countsForFlush, bonusChips);

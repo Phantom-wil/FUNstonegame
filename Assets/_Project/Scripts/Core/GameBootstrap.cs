@@ -1,13 +1,14 @@
 using PasserCard.Cards;
 using PasserCard.Encounter;
 using PasserCard.Run;
+using PasserCard.Table;
 using PasserCard.UI;
 using UnityEngine;
 
 namespace PasserCard.Core
 {
     /// <summary>
-    /// Scene entry: creates encounter session and optional UI.
+    /// Scene entry: creates encounter session and optional UI (encounter-only test mode).
     /// </summary>
     public sealed class GameBootstrap : MonoBehaviour
     {
@@ -15,6 +16,9 @@ namespace PasserCard.Core
         [SerializeField] private int guardianTargetScore = 120;
         [SerializeField] private bool startEncounterOnPlay = true;
         [SerializeField] private bool useEncounterUI = true;
+        [SerializeField] private TableEnvironmentId tableEnvironment = TableEnvironmentId.FogMist;
+        [SerializeField] private RunIdentityId identityId = RunIdentityId.Ferryman;
+        [SerializeField] private StartingDeckId deckId = StartingDeckId.Standard;
 
         private EncounterSession? _session;
 
@@ -52,14 +56,17 @@ namespace PasserCard.Core
 
         private EncounterSession CreateSession()
         {
+            var identity = RunIdentityLibrary.Get(identityId);
+            var deck = StartingDeckLibrary.Get(deckId).BuildDeck(new System.Random());
             var config = new EncounterConfig
             {
                 TargetScore = guardianTargetScore,
-                MistFogSlots = 2
+                MistFogSlots = 2,
+                TableEnvironment = tableEnvironment
             };
+            identity.ApplyToConfig(config);
 
-            var wallet = new SoulCoinWallet(startingSoulCoins);
-            var deck = PlayingCardFactory.CreateStandardDeck(dualRank: true, random: new System.Random());
+            var wallet = new SoulCoinWallet(identity.StartingCoins > 0 ? identity.StartingCoins : startingSoulCoins);
             return new EncounterSession(config, deck, wallet, new System.Random());
         }
     }

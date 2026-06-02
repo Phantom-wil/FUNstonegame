@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using PasserCard.Cards;
 using PasserCard.Encounter;
+using PasserCard.Table;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,10 +15,12 @@ namespace PasserCard.UI
         private Guid? _selectedCardId;
         private readonly List<GameObject> _handCardObjects = new();
         private string _lastMessage = string.Empty;
+        private Action<EncounterSession>? _onEncounterComplete;
 
-        public void Bind(EncounterSession session)
+        public void Bind(EncounterSession session, Action<EncounterSession>? onComplete = null)
         {
             _session = session ?? throw new ArgumentNullException(nameof(session));
+            _onEncounterComplete = onComplete;
             EnsureUI();
             WireButtons();
             Refresh();
@@ -145,6 +148,8 @@ namespace PasserCard.UI
                 {
                     var outcome = _session.IsVictory ? "胜利" : "失败";
                     SetMessage($"Encounter 结束：{outcome}。魂币 {_session.Wallet.Balance}");
+                    _onEncounterComplete?.Invoke(_session);
+                    _onEncounterComplete = null;
                 }
                 else
                 {
@@ -214,10 +219,35 @@ namespace PasserCard.UI
             }
 
             RefreshStatus();
+            RefreshTableBackdrop();
             RefreshSlots();
             RefreshHand();
             RefreshButtons();
             _ui.MessageText.text = _lastMessage;
+        }
+
+        private void RefreshTableBackdrop()
+        {
+            if (_ui == null || _session == null)
+            {
+                return;
+            }
+
+            var visual = TableEnvironmentLibrary.Get(_session.Config.TableEnvironment);
+            _ui.TableBackdrop.Apply(visual);
+            CardVisualHelper.SetTableVisual(visual);
+
+            var fogCount = 0;
+            for (var i = 0; i < _session.PlayArea.Slots.Count; i++)
+            {
+                if (_session.PlayArea.Slots[i].IsFog)
+                {
+                    fogCount++;
+                }
+            }
+
+            var fogIntensity = Mathf.Clamp01(fogCount / 5f + (visual.UseFogOverlay ? 0.25f : 0f));
+            _ui.TableBackdrop.SetFogIntensity(fogIntensity);
         }
 
         private void RefreshStatus()
@@ -324,8 +354,8 @@ namespace PasserCard.UI
 
             SetButtonLabel(_ui.DiscardButton, $"弃牌\n({_session.DiscardsRemaining})");
             SetButtonLabel(_ui.PassButton, $"Pass\n({_session.PassesRemaining})");
-            SetButtonLabel(_ui.SubmitButton, phase == EncounterPhase.PlayToSlots ? "计分" : "计分");
-            SetButtonLabel(_ui.ToPlayPhaseButton, "→ 出牌");
+            SetButtonLabel(_ui.SubmitButton, "计分");
+            SetButtonLabel(_ui.ToPlayPhaseButton, "去出牌");
         }
 
         private static void SetButtonLabel(Button button, string label)

@@ -1,4 +1,5 @@
 using PasserCard.Cards;
+using PasserCard.Table;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -22,6 +23,13 @@ namespace PasserCard.UI
         private const float SelectBorderOutset = 2f;
 
         private static readonly Color SelectBorderColor = new(1f, 0.82f, 0.28f, 1f);
+
+        private static TableEnvironmentVisual _tableVisual = TableEnvironmentLibrary.FogMist;
+
+        public static void SetTableVisual(TableEnvironmentVisual visual)
+        {
+            _tableVisual = visual;
+        }
 
         private static Material? _keyedArtMaterial;
         private static Sprite? _whitePixelSprite;
@@ -141,7 +149,7 @@ namespace PasserCard.UI
             art.type = Image.Type.Simple;
             art.preserveAspect = true;
             art.material = null;
-            art.color = new Color(0.72f, 0.74f, 0.78f, 1f);
+            art.color = Color.Lerp(_tableVisual.FogColor, _tableVisual.AccentColor, 0.35f);
             art.enabled = BalatroSpriteLibrary.FogSlotBack != null;
 
             badge.text = "雾槽";
@@ -168,7 +176,7 @@ namespace PasserCard.UI
             face.sprite = BalatroSpriteLibrary.CardFace;
             face.type = Image.Type.Simple;
             face.preserveAspect = true;
-            face.color = fog ? new Color(0.55f, 0.58f, 0.62f, 0.35f) : new Color(0.45f, 0.48f, 0.52f, 0.22f);
+            face.color = fog ? Color.Lerp(_tableVisual.AccentColor, Color.white, 0.55f) * new Color(1f, 1f, 1f, 0.35f) : Color.Lerp(_tableVisual.PlayAreaColor, _tableVisual.BaseColor, 0.35f) * new Color(1f, 1f, 1f, 0.28f);
             face.enabled = BalatroSpriteLibrary.CardFace != null;
 
             art.enabled = false;

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using PasserCard.Cards;
+using PasserCard.Enchantments;
 using PasserCard.Gameplay;
 using PasserCard.Pass;
 using PasserCard.Poker;
@@ -17,6 +18,8 @@ namespace PasserCard.Encounter
         private readonly PlayArea _playArea;
         private readonly PassState _passState = new();
         private readonly Random _random;
+        private readonly List<PlayingCardInstance> _burnPile = new();
+        private bool _passedThisQuota;
 
         public EncounterSession(
             EncounterConfig config,
@@ -56,9 +59,10 @@ namespace PasserCard.Encounter
         public PassState PassState => _passState;
         public EncounterConfig Config => _config;
         public int PassesUsed => _passState.PassesUsed;
-        public int PassLimit => _config.PassLimit;
-        public int PassesRemaining => Math.Max(0, _config.PassLimit - _passState.PassesUsed);
+        public int PassLimit => _config.PassLimit + _config.IdentityExtraPasses;
+        public int PassesRemaining => Math.Max(0, PassLimit - _passState.PassesUsed);
         public int TargetScore => _config.TargetScore;
+        public IReadOnlyList<PlayingCardInstance> BurnPile => _burnPile;
 
         public string PhaseLabel => Phase switch
         {
@@ -89,6 +93,7 @@ namespace PasserCard.Encounter
             Phase = EncounterPhase.QuotaSetup;
             _passState.PassesUsed = 0;
             _passState.MustDoublePassNext = false;
+            _passedThisQuota = false;
 
             for (var i = 0; i < _hand.Count; i++)
             {
@@ -168,7 +173,19 @@ namespace PasserCard.Encounter
                     continue;
                 }
 
-                return SuitPassRules.TryPass(card, _passState, Wallet, _config.PassLimit);
+                var result = SuitPassRules.TryPass(card, _passState, Wallet, PassLimit, _config, _random);
+                if (result.Success)
+                {
+                    _passedThisQuota = true;
+                    EnchantmentRules.OnPass(card, _hand.Cards, i);
+                    if (EnchantmentRules.TrySplitWarCrack(card, _random, out var half) && half != null)
+                    {
+                        _drawPile.Add(half);
+                        _drawPile.Shuffle();
+                    }
+                }
+
+                return result;
             }
 
             return new PassResult(false, "Card not in hand.", false);
@@ -217,6 +234,7 @@ namespace PasserCard.Encounter
             }
 
             var scoringCards = new List<ScoringCard>();
+            var committed = _playArea.GetCommittedCards();
             for (var i = 0; i < _playArea.Slots.Count; i++)
             {
                 var slot = _playArea.Slots[i];
@@ -225,7 +243,8 @@ namespace PasserCard.Encounter
                     continue;
                 }
 
-                scoringCards.Add(SuitPassRules.ToScoringCard(slot.Card, slot.IsFog));
+                var riftMult = TableEnvironmentRules.RiftCrackSplitBonus(_config, slot.Card);
+                scoringCards.Add(SuitPassRules.ToScoringCard(slot.Card, slot.IsFog, riftMult));
             }
 
             if (scoringCards.Count == 0)
@@ -235,7 +254,13 @@ namespace PasserCard.Encounter
                 return false;
             }
 
-            var mult = extraMult * SuitPassRules.GetHeartChipsPenalty(_passState);
+            ApplyThornUnpassedCosts(committed);
+
+            var mult = extraMult
+                       * SuitPassRules.GetHeartChipsPenalty(_passState)
+                       * _config.IdentityScoreMultiplier
+                       * EnchantmentRules.GetScoreMultModifier(committed, CurrentQuota, _config.PlayQuotas);
+
             result = PokerHandEvaluator.Evaluate(scoringCards, mult);
             LastQuotaScore = result.TotalScore;
             if (result.TotalScore > BestScore)
@@ -257,7 +282,13 @@ namespace PasserCard.Encounter
 
             if (!IsVictory && CurrentQuota < _config.PlayQuotas)
             {
-                Wallet.TrySpend(_config.RetaliationCoinLoss);
+                var loss = _config.RetaliationCoinLoss;
+                if (!_passedThisQuota && _config.BossId == Boss.BossId.Cerberus)
+                {
+                    loss += 1;
+                }
+
+                Wallet.TrySpend(loss);
             }
 
             ReturnCommittedCardsToDeck();
@@ -270,11 +301,40 @@ namespace PasserCard.Encounter
             Phase = EncounterPhase.EncounterComplete;
             if (IsVictory)
             {
-                Wallet.Add(_config.VictoryCoinReward);
+                var reward = (int)Math.Round(_config.VictoryCoinReward * _config.IdentityCoinGainMultiplier);
+                Wallet.Add(reward);
             }
             else
             {
                 Wallet.TrySpend(_config.DefeatCoinLoss);
+            }
+        }
+
+        public List<PlayingCardInstance> CollectRunDeckSnapshot()
+        {
+            var cards = new List<PlayingCardInstance>();
+            cards.AddRange(_drawPile.Cards);
+            cards.AddRange(_hand.Cards);
+            for (var i = 0; i < _playArea.Slots.Count; i++)
+            {
+                if (_playArea.Slots[i].Card != null)
+                {
+                    cards.Add(_playArea.Slots[i].Card!);
+                }
+            }
+
+            return cards;
+        }
+
+        private void ApplyThornUnpassedCosts(IReadOnlyList<PlayingCardInstance> committed)
+        {
+            for (var i = 0; i < committed.Count; i++)
+            {
+                var cost = TableEnvironmentRules.ThornUnpassedPlayCost(committed[i], _config);
+                if (cost > 0)
+                {
+                    Wallet.TrySpend(cost);
+                }
             }
         }
 
@@ -291,11 +351,19 @@ namespace PasserCard.Encounter
             for (var i = 0; i < _playArea.Slots.Count; i++)
             {
                 var card = _playArea.Slots[i].ClearCard();
-                if (card != null)
+                if (card == null)
                 {
-                    card.ResetQuotaFlags();
-                    _drawPile.Add(card);
+                    continue;
                 }
+
+                card.ResetQuotaFlags();
+                if (EnchantmentRules.ShouldBurnAfterPlay(card))
+                {
+                    _burnPile.Add(card);
+                    continue;
+                }
+
+                _drawPile.Add(card);
             }
 
             _drawPile.Shuffle();
